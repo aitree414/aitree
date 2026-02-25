@@ -1,0 +1,18 @@
+# Environment
+.env
+
+# Python virtual environment
+backend/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Reports (runtime data)
+reports/
+
+# macOS
+.DS_Store

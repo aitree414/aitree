@@ -1,0 +1,14 @@
+{
+  "us_stocks": [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA",
+    "BRK-B", "JPM", "JNJ", "V", "PG", "UNH", "HD", "MA",
+    "DIS", "PYPL", "ADBE", "CRM", "NFLX", "INTC", "AMD",
+    "QCOM", "TXN", "MU", "ORCL", "IBM", "CSCO", "AVGO"
+  ],
+  "tw_stocks": [
+    "2330.TW", "2317.TW", "2454.TW", "2308.TW", "2382.TW",
+    "2303.TW", "2881.TW", "2882.TW", "2891.TW", "2886.TW",
+    "1301.TW", "1303.TW", "6505.TW", "2002.TW", "1216.TW",
+    "2412.TW", "3008.TW", "2357.TW", "2395.TW", "3045.TW"
+  ]
+}

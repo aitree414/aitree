@@ -1,0 +1,19 @@
+value:
+  max_pe: 15
+  max_pb: 2.0
+  min_dividend_yield: 0.03
+
+momentum:
+  rsi_min: 50
+  rsi_max: 70
+  lookback_days: 60
+
+pullback:
+  ma_proximity_min: 0.95
+  ma_proximity_max: 1.02
+  rsi_max: 50
+  volume_multiplier: 1.2
+
+quality:
+  min_roe: 0.15
+  min_earnings_growth: 0.10
