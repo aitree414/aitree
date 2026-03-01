@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web3 監控 - BackTester</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .status-badge { font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 999px; }
+    .pool-row:hover { background: #f8f9fa; }
+    .gas-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .gas-unit { font-size: 0.85rem; color: #6c757d; }
+    .airdrop-priority-高 { color: #dc3545; font-weight: 600; }
+    .airdrop-priority-中 { color: #fd7e14; font-weight: 600; }
+    .airdrop-priority-低 { color: #6c757d; }
+    .task-item { font-size: 0.85rem; color: #495057; }
+    .refresh-btn { font-size: 0.8rem; }
+    .last-update { font-size: 0.75rem; color: #adb5bd; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="index.html">BackTester</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="index.html">回測</a></li>
+        <li class="nav-item"><a class="nav-link" href="ma-strategy.html">MA 策略</a></li>
+        <li class="nav-item"><a class="nav-link" href="horse-race.html">策略競賽</a></li>
+        <li class="nav-item"><a class="nav-link active" href="web3.html">Web3</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-1">Web3 監控</h1>
+      <p class="text-muted mb-0">Gas 費用 · DeFi 收益 · Airdrop 任務</p>
+    </div>
+    <button class="btn btn-outline-primary refresh-btn" onclick="loadAll()">重新整理</button>
+  </div>
+
+  <!-- Gas 費用 -->
+  <div class="section-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="section-title mb-0">Gas 費用</div>
+      <span id="gas-update" class="last-update"></span>
+    </div>
+    <div id="gas-content">
+      <div class="text-center text-muted py-3">載入中...</div>
+    </div>
+  </div>
+
+  <!-- DeFi 最高收益 -->
+  <div class="section-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="section-title mb-0">DeFi 最高收益池</div>
+      <span id="defi-update" class="last-update"></span>
+    </div>
+    <div id="defi-content">
+      <div class="text-center text-muted py-3">載入中...</div>
+    </div>
+  </div>
+
+  <!-- Airdrop 任務 -->
+  <div class="section-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="section-title mb-0">Airdrop 任務追蹤</div>
+      <span id="airdrop-update" class="last-update"></span>
+    </div>
+    <div id="airdrop-content">
+      <div class="text-center text-muted py-3">載入中...</div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="border-top py-3 mt-4">
+  <div class="container text-center text-muted small">
+    Web3 監控 &mdash; 資料來源：Etherscan · DeFi Llama | 僅供參考，非投資建議
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script>
+const API = window.API_BASE || 'http://localhost:8000/api';
+const now = () => new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+
+async function loadGas() {
+  try {
+    const res = await fetch(`${API}/web3/gas`);
+    const d = await res.json();
+    document.getElementById('gas-update').textContent = `更新：${now()}`;
+    if (d.error) {
+      document.getElementById('gas-content').innerHTML = `<div class="text-danger">${d.error}</div>`;
+      return;
+    }
+    const colorMap = { success: 'success', warning: 'warning', danger: 'danger' };
+    const c = colorMap[d.color] || 'secondary';
+    document.getElementById('gas-content').innerHTML = `
+      <div class="row g-3 align-items-center">
+        <div class="col-auto">
+          <div class="text-muted small mb-1">${d.chain}</div>
+          <div class="gas-value text-${c}">${d.slow}</div>
+          <div class="gas-unit">Gwei（慢速）</div>
+        </div>
+        <div class="col">
+          <div class="row g-2">
+            <div class="col-6 col-md-4">
+              <div class="p-2 bg-light rounded text-center">
+                <div class="text-muted small">標準</div>
+                <div class="fw-bold">${d.standard} Gwei</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="p-2 bg-light rounded text-center">
+                <div class="text-muted small">快速</div>
+                <div class="fw-bold">${d.fast} Gwei</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="p-2 bg-light rounded text-center">
+                <div class="text-muted small">狀態</div>
+                <span class="badge bg-${c}">${d.status}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  } catch (e) {
+    document.getElementById('gas-content').innerHTML = `<div class="text-danger">API 連線失敗</div>`;
+  }
+}
+
+async function loadDefi() {
+  try {
+    const res = await fetch(`${API}/web3/defi`);
+    const d = await res.json();
+    document.getElementById('defi-update').textContent = `更新：${now()}`;
+    const pools = d.pools || [];
+    if (!pools.length) {
+      document.getElementById('defi-content').innerHTML = `<div class="text-muted">無資料</div>`;
+      return;
+    }
+    const rows = pools.map((p, i) => `
+      <tr class="pool-row">
+        <td class="text-muted small">${i + 1}</td>
+        <td><span class="fw-semibold">${p.symbol}</span><br><span class="text-muted small">${p.project}</span></td>
+        <td><span class="badge bg-light text-dark border">${p.chain}</span></td>
+        <td class="fw-bold text-success">${p.apy.toFixed(2)}%</td>
+        <td class="text-muted small">$${(p.tvl/1e6).toFixed(1)}M</td>
+      </tr>`).join('');
+    document.getElementById('defi-content').innerHTML = `
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th><th>池子</th><th>鏈</th><th>年化</th><th>TVL</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } catch (e) {
+    document.getElementById('defi-content').innerHTML = `<div class="text-danger">API 連線失敗</div>`;
+  }
+}
+
+async function loadAirdrops() {
+  try {
+    const res = await fetch(`${API}/web3/airdrops`);
+    const d = await res.json();
+    document.getElementById('airdrop-update').textContent = `更新：${now()}`;
+    const projects = d.projects || [];
+    if (!projects.length) {
+      document.getElementById('airdrop-content').innerHTML = `<div class="text-muted">無資料</div>`;
+      return;
+    }
+    const cards = projects.map(p => {
+      const tasks = (p.tasks || []).map(t => `<li class="task-item">${t}</li>`).join('');
+      const lastInt = p.last_interaction
+        ? `<span class="text-muted small">上次互動：${p.last_interaction}</span>`
+        : `<span class="text-warning small">尚未記錄互動</span>`;
+      return `
+        <div class="col-md-6 col-lg-4">
+          <div class="border rounded p-3 h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="fw-semibold">${p.name}</div>
+              <span class="airdrop-priority-${p.priority}">${p.priority}</span>
+            </div>
+            <div class="mb-2">${lastInt}</div>
+            <ul class="mb-1 ps-3">${tasks}</ul>
+            ${p.notes ? `<div class="text-muted small mt-1">${p.notes}</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    document.getElementById('airdrop-content').innerHTML = `<div class="row g-3">${cards}</div>`;
+  } catch (e) {
+    document.getElementById('airdrop-content').innerHTML = `<div class="text-danger">API 連線失敗</div>`;
+  }
+}
+
+function loadAll() {
+  loadGas();
+  loadDefi();
+  loadAirdrops();
+}
+
+loadAll();
+// 每 5 分鐘自動更新
+setInterval(loadAll, 5 * 60 * 1000);
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router as main_router
 from api.ma_routes import router as ma_router
 from api.screener_routes import router as screener_router
+from api.web3_routes import router as web3_router
 
 app = FastAPI(
     title="BackTester API",
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(main_router, prefix="/api")
 app.include_router(ma_router, prefix="/api")
 app.include_router(screener_router, prefix="/api")
+app.include_router(web3_router, prefix="/api")
 
 
 @app.get("/")

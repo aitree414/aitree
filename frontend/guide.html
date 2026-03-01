@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新手入門指南 - BackTester</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .phase-header {
+      background: #f8f9fa;
+      border-left: 4px solid #0d6efd;
+      padding: 0.75rem 1rem;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 1rem;
+    }
+    .phase-header.done { border-left-color: #198754; }
+    .step-card {
+      border: 1px solid #e9ecef;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      transition: box-shadow 0.15s;
+    }
+    .step-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .step-card.completed {
+      background: #f0fff4;
+      border-color: #b7e4c7;
+    }
+    .step-card.completed .step-title { text-decoration: line-through; color: #6c757d; }
+    .step-num {
+      width: 28px; height: 28px;
+      background: #0d6efd; color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .step-num.done { background: #198754; }
+    .step-title { font-weight: 600; font-size: 0.95rem; }
+    .step-desc { font-size: 0.85rem; color: #6c757d; margin-top: 0.3rem; }
+    .step-detail {
+      font-size: 0.85rem;
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+    .step-detail.show { display: block; }
+    .step-detail ol, .step-detail ul { margin-bottom: 0; padding-left: 1.2rem; }
+    .step-detail li { margin-bottom: 0.3rem; }
+    .warning-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+    }
+    .info-box {
+      background: #cff4fc;
+      border: 1px solid #0dcaf0;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+    }
+    .progress-bar-custom { height: 8px; border-radius: 4px; }
+    .expand-btn {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      cursor: pointer;
+    }
+    .risk-badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+    }
+    .amount-example {
+      background: #e9ecef;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="index.html">BackTester</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="index.html">回測</a></li>
+        <li class="nav-item"><a class="nav-link" href="ma-strategy.html">MA 策略</a></li>
+        <li class="nav-item"><a class="nav-link" href="horse-race.html">策略競賽</a></li>
+        <li class="nav-item"><a class="nav-link" href="web3.html">Web3</a></li>
+        <li class="nav-item"><a class="nav-link active" href="guide.html">新手指南</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4" style="max-width: 760px;">
+
+  <div class="mb-4">
+    <h1 class="h3 fw-bold mb-1">新手入門指南</h1>
+    <p class="text-muted mb-0">從零開始，一步一步進入 Web3 世界</p>
+  </div>
+
+  <!-- 進度條 -->
+  <div class="section-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold">整體進度</span>
+      <span id="progress-text" class="text-muted small">0 / 15 完成</span>
+    </div>
+    <div class="progress progress-bar-custom">
+      <div id="progress-bar" class="progress-bar bg-success" style="width: 0%"></div>
+    </div>
+    <div class="mt-2 d-flex gap-2 flex-wrap" id="phase-badges"></div>
+  </div>
+
+  <!-- 風險提示 -->
+  <div class="warning-box mb-4">
+    <strong>重要提示</strong><br>
+    Web3 有真實風險。建議第一個月只投入你不怕損失的金額（建議 1 萬台幣試手感）。
+    任何人要求你提供「助記詞」或「私鑰」都是詐騙，立刻離開。
+  </div>
+
+  <!-- 第一階段：帳戶設定 -->
+  <div id="phase-0" class="mb-4">
+    <div class="phase-header" id="phase-header-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span class="fw-bold">第一階段：帳戶設定</span>
+          <span class="text-muted small ms-2">開交易所帳戶 + 安裝錢包</span>
+        </div>
+        <span class="badge bg-secondary" id="phase-badge-0">0/5</span>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-0">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="0" style="width:18px;height:18px;">
+        <div class="step-num" id="num-0">1</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">在 MAX 交易所註冊帳號</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(0)">詳細步驟</button>
+          </div>
+          <div class="step-desc">台灣合法交易所，支援台幣直接入金</div>
+          <div class="step-detail" id="detail-0">
+            <ol>
+              <li>前往 <strong>max.maicoin.com</strong></li>
+              <li>點「立即註冊」，填入 Email 和密碼</li>
+              <li>驗證 Email</li>
+              <li>開啟雙重驗證（2FA）—— 下載 Google Authenticator App</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-1">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="1" style="width:18px;height:18px;">
+        <div class="step-num" id="num-1">2</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">完成 KYC 身分驗證</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(1)">詳細步驟</button>
+          </div>
+          <div class="step-desc">需身分證正反面 + 本人自拍照，通常 1 個工作天審核完成</div>
+          <div class="step-detail" id="detail-1">
+            <ol>
+              <li>登入 MAX → 點右上角頭像 → 「身份驗證」</li>
+              <li>上傳身分證正面、反面照片</li>
+              <li>拍一張手持身分證的自拍照</li>
+              <li>等待審核（通常當天完成）</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-2">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="2" style="width:18px;height:18px;">
+        <div class="step-num" id="num-2">3</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">綁定銀行帳戶</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(2)">詳細步驟</button>
+          </div>
+          <div class="step-desc">綁定後才能台幣入出金</div>
+          <div class="step-detail" id="detail-2">
+            <ol>
+              <li>MAX → 「錢包」→「台幣入金」</li>
+              <li>點「新增銀行帳戶」</li>
+              <li>填入銀行代碼、帳號（需本人帳戶）</li>
+              <li>用小額轉帳驗證（MAX 會出題確認金額）</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-3">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="3" style="width:18px;height:18px;">
+        <div class="step-num" id="num-3">4</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">安裝 MetaMask 錢包</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(3)">詳細步驟</button>
+          </div>
+          <div class="step-desc">你在 Web3 世界的「銀行帳戶」</div>
+          <div class="step-detail" id="detail-3">
+            <ol>
+              <li>在 Chrome 瀏覽器搜尋「MetaMask」</li>
+              <li>只從 <strong>metamask.io</strong> 官網安裝，不要點廣告</li>
+              <li>點「Create a new wallet」</li>
+              <li>設定密碼</li>
+              <li>查看並記下 12 個助記詞</li>
+            </ol>
+            <div class="warning-box mt-2">
+              助記詞必須抄在紙上，離線保存。不要截圖，不要存雲端，不要給任何人看。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-4">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="4" style="width:18px;height:18px;">
+        <div class="step-num" id="num-4">5</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">記錄 MetaMask 錢包地址</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(4)">詳細步驟</button>
+          </div>
+          <div class="step-desc">錢包地址是公開的，可以安全地分享或貼到交易所</div>
+          <div class="step-detail" id="detail-4">
+            <ol>
+              <li>點開 MetaMask 擴充功能</li>
+              <li>點帳戶名稱旁的複製按鈕</li>
+              <li>地址格式：<code>0x...</code>（42 個字元）</li>
+              <li>這個地址就是你的「收款地址」，可以給別人轉幣用</li>
+            </ol>
+            <div class="info-box mt-2">
+              地址 ≠ 私鑰。地址是公開的沒問題，私鑰和助記詞才需要保密。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第二階段：入金 -->
+  <div id="phase-1" class="mb-4">
+    <div class="phase-header" id="phase-header-1">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span class="fw-bold">第二階段：入金</span>
+          <span class="text-muted small ms-2">台幣換成 USDC，轉到錢包</span>
+        </div>
+        <span class="badge bg-secondary" id="phase-badge-1">0/4</span>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-5">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="5" style="width:18px;height:18px;">
+        <div class="step-num" id="num-5">6</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">台幣入金到 MAX</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(5)">詳細步驟</button>
+          </div>
+          <div class="step-desc">建議第一次先入 10,000 元試試看</div>
+          <div class="step-detail" id="detail-5">
+            <ol>
+              <li>MAX → 「錢包」→「入金」→「台幣」</li>
+              <li>選擇你綁定的銀行帳戶</li>
+              <li>用網銀轉帳到 MAX 指定帳號</li>
+              <li>備註欄填入 MAX 指定的備註碼（很重要！）</li>
+              <li>通常 30 分鐘內到帳</li>
+            </ol>
+            <div class="amount-example">
+              建議第一次：10,000 元<br>
+              熟練後可增加到：100,000 元
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-6">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="6" style="width:18px;height:18px;">
+        <div class="step-num" id="num-6">7</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">在 MAX 買 USDC</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(6)">詳細步驟</button>
+          </div>
+          <div class="step-desc">USDC 是美元穩定幣，1 USDC ≈ 33 台幣，不會暴漲暴跌</div>
+          <div class="step-detail" id="detail-6">
+            <ol>
+              <li>MAX → 「交易」→ 搜尋「USDC/TWD」</li>
+              <li>選「市價買入」（不用研究價格）</li>
+              <li>輸入台幣金額 → 確認購買</li>
+              <li>買完後到「錢包」確認 USDC 餘額</li>
+            </ol>
+            <div class="amount-example">
+              10,000 台幣 ≈ 303 USDC（匯率約 33）
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-7">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="7" style="width:18px;height:18px;">
+        <div class="step-num" id="num-7">8</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">從 MAX 提幣到 MetaMask</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(7)">詳細步驟</button>
+          </div>
+          <div class="step-desc">把 USDC 從交易所移到你自己的錢包</div>
+          <div class="step-detail" id="detail-7">
+            <ol>
+              <li>MAX → 「錢包」→「提幣」→「USDC」</li>
+              <li>網路選 <strong>Ethereum（ERC-20）</strong></li>
+              <li>貼上你的 MetaMask 地址</li>
+              <li>確認地址無誤後送出（錯誤地址無法追回）</li>
+              <li>等待 10-30 分鐘到帳</li>
+            </ol>
+            <div class="warning-box mt-2">
+              提幣前請先小額測試（提 10 USDC 確認地址正確），再提大額。
+              手續費約 $2-5 USD。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-8">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="8" style="width:18px;height:18px;">
+        <div class="step-num" id="num-8">9</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">確認 MetaMask 收到 USDC</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(8)">詳細步驟</button>
+          </div>
+          <div class="step-desc">確認資金安全抵達你的錢包</div>
+          <div class="step-detail" id="detail-8">
+            <ol>
+              <li>打開 MetaMask</li>
+              <li>如果看不到 USDC，點「Import tokens」</li>
+              <li>輸入 USDC 合約地址：<code>0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48</code></li>
+              <li>應能看到 USDC 餘額</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第三階段：開始賺利息 -->
+  <div id="phase-2" class="mb-4">
+    <div class="phase-header" id="phase-header-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span class="fw-bold">第三階段：開始賺利息</span>
+          <span class="text-muted small ms-2">存入 Aave，每天自動生息</span>
+        </div>
+        <span class="badge bg-secondary" id="phase-badge-2">0/3</span>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-9">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="9" style="width:18px;height:18px;">
+        <div class="step-num" id="num-9">10</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">進入 Aave 網站</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(9)">詳細步驟</button>
+          </div>
+          <div class="step-desc">Aave 是最大最安全的 DeFi 借貸平台，成立於 2020 年</div>
+          <div class="step-detail" id="detail-9">
+            <ol>
+              <li>前往 <strong>app.aave.com</strong>（確認網址正確）</li>
+              <li>點右上角「Connect wallet」</li>
+              <li>選「MetaMask」</li>
+              <li>MetaMask 會彈出視窗要求連接，點「連接」</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-10">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="10" style="width:18px;height:18px;">
+        <div class="step-num" id="num-10">11</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">存入 USDC 開始賺利息</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(10)">詳細步驟</button>
+          </div>
+          <div class="step-desc">目前年化約 5-8%，每秒自動累積</div>
+          <div class="step-detail" id="detail-10">
+            <ol>
+              <li>在 Aave 找到「USDC」那一行</li>
+              <li>點「Supply」（存入）</li>
+              <li>輸入金額（建議先留 10 USDC 在錢包備用 Gas 費）</li>
+              <li>點「Approve」→ MetaMask 確認</li>
+              <li>點「Supply」→ MetaMask 再次確認</li>
+              <li>交易完成後即開始賺取利息</li>
+            </ol>
+            <div class="amount-example">
+              存入 300 USDC，年化 6%<br>
+              每天賺：0.049 USDC（約 1.6 台幣）<br>
+              每年賺：18 USDC（約 594 台幣）
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-11">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="11" style="width:18px;height:18px;">
+        <div class="step-num" id="num-11">12</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">確認 Telegram 已收到監控通知</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(11)">詳細步驟</button>
+          </div>
+          <div class="step-desc">系統會自動通知你最佳操作時機</div>
+          <div class="step-detail" id="detail-11">
+            <ol>
+              <li>確認你的 @stocktree_bot 有在運作</li>
+              <li>Gas 費低的時候會收到通知 → 那時操作最省錢</li>
+              <li>有更高收益池時會收到通知 → 你決定是否搬資金</li>
+              <li>Airdrop 超過 7 天未互動會提醒你</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第四階段：Airdrop -->
+  <div id="phase-3" class="mb-4">
+    <div class="phase-header" id="phase-header-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span class="fw-bold">第四階段：Airdrop 獵取</span>
+          <span class="text-muted small ms-2">在新平台留下足跡，等待免費代幣</span>
+        </div>
+        <span class="badge bg-secondary" id="phase-badge-3">0/3</span>
+      </div>
+    </div>
+
+    <div class="info-box mb-3">
+      Airdrop 沒有保證，但成本極低（只有 Gas 費）。歷史上有人靠一個 Airdrop 賺到數萬美元。
+      當作買彩券，但本金幾乎不會損失。
+    </div>
+
+    <div class="step-card" id="step-12">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="12" style="width:18px;height:18px;">
+        <div class="step-num" id="num-12">13</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">在 zkSync 做第一筆交易</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(12)">詳細步驟</button>
+          </div>
+          <div class="step-desc">zkSync 是潛力最高的 Layer2，尚未完全發幣</div>
+          <div class="step-detail" id="detail-12">
+            <ol>
+              <li>前往 <strong>portal.zksync.io/bridge</strong></li>
+              <li>連接 MetaMask</li>
+              <li>從 Ethereum 橋接少量 ETH 到 zkSync（約 $10 USD）</li>
+              <li>在 zkSync 上用 <strong>syncswap.xyz</strong> 做一筆 ETH → USDC 兌換</li>
+              <li>記錄今天的日期（之後每週做一筆）</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-13">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="13" style="width:18px;height:18px;">
+        <div class="step-num" id="num-13">14</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">在 Scroll 做第一筆交易</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(13)">詳細步驟</button>
+          </div>
+          <div class="step-desc">Scroll 是另一個以太坊 Layer2，已有大型機構投資</div>
+          <div class="step-detail" id="detail-13">
+            <ol>
+              <li>前往 <strong>scroll.io/bridge</strong></li>
+              <li>連接 MetaMask</li>
+              <li>橋接少量 ETH 到 Scroll</li>
+              <li>在 Scroll 上使用任何一個 DEX 做兌換</li>
+              <li>每月至少做一次</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" id="step-14">
+      <div class="d-flex align-items-start gap-3">
+        <input type="checkbox" class="form-check-input mt-1 step-check" data-step="14" style="width:18px;height:18px;">
+        <div class="step-num" id="num-14">15</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="step-title">設定定期提醒（每週執行一次）</div>
+            <button class="btn btn-outline-secondary expand-btn" onclick="toggleDetail(14)">詳細步驟</button>
+          </div>
+          <div class="step-desc">Airdrop 看重互動次數，定期操作才能最大化資格</div>
+          <div class="step-detail" id="detail-14">
+            <ol>
+              <li>在手機設定每週一提醒「Airdrop 互動」</li>
+              <li>每次花 5 分鐘，在 zkSync 和 Scroll 各做一筆小額兌換</li>
+              <li>你的 Telegram 也會在 7 天未互動時自動提醒你</li>
+            </ol>
+            <div class="info-box mt-2">
+              每週 5 分鐘 + 約 $2 USD Gas 費 = 可能的數千美元回報
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重置按鈕 -->
+  <div class="text-end mb-4">
+    <button class="btn btn-outline-danger btn-sm" onclick="resetProgress()">重置所有進度</button>
+  </div>
+
+</div>
+
+<footer class="border-top py-3 mt-4">
+  <div class="container text-center text-muted small">
+    新手指南 &mdash; 僅供教育用途，非投資建議。所有 Web3 操作請自行承擔風險。
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const TOTAL = 15;
+const PHASES = [
+  { name: '帳戶設定', steps: [0,1,2,3,4] },
+  { name: '入金',     steps: [5,6,7,8] },
+  { name: '存入 Aave', steps: [9,10,11] },
+  { name: 'Airdrop',  steps: [12,13,14] },
+];
+
+function loadState() {
+  const saved = localStorage.getItem('guide-progress');
+  return saved ? JSON.parse(saved) : {};
+}
+
+function saveState(state) {
+  localStorage.setItem('guide-progress', JSON.stringify(state));
+}
+
+function updateUI() {
+  const state = loadState();
+  let completed = 0;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const card = document.getElementById(`step-${i}`);
+    const num = document.getElementById(`num-${i}`);
+    const cb = document.querySelector(`[data-step="${i}"]`);
+    if (state[i]) {
+      card.classList.add('completed');
+      num.classList.add('done');
+      cb.checked = true;
+      completed++;
+    } else {
+      card.classList.remove('completed');
+      num.classList.remove('done');
+      cb.checked = false;
+    }
+  }
+
+  // 更新進度條
+  const pct = Math.round((completed / TOTAL) * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${completed} / ${TOTAL} 完成`;
+
+  // 更新階段 badge
+  PHASES.forEach((phase, pi) => {
+    const done = phase.steps.filter(s => state[s]).length;
+    const total = phase.steps.length;
+    const badge = document.getElementById(`phase-badge-${pi}`);
+    const header = document.getElementById(`phase-header-${pi}`);
+    badge.textContent = `${done}/${total}`;
+    if (done === total) {
+      badge.className = 'badge bg-success';
+      header.classList.add('done');
+    } else if (done > 0) {
+      badge.className = 'badge bg-primary';
+      header.classList.remove('done');
+    } else {
+      badge.className = 'badge bg-secondary';
+      header.classList.remove('done');
+    }
+  });
+}
+
+function toggleDetail(i) {
+  const detail = document.getElementById(`detail-${i}`);
+  detail.classList.toggle('show');
+}
+
+function resetProgress() {
+  if (confirm('確定要重置所有進度嗎？')) {
+    localStorage.removeItem('guide-progress');
+    updateUI();
+  }
+}
+
+// 綁定 checkbox 事件
+document.querySelectorAll('.step-check').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const state = loadState();
+    state[this.dataset.step] = this.checked;
+    saveState(state);
+    updateUI();
+  });
+});
+
+updateUI();
+</script>
+</body>
+</html>
